@@ -4,7 +4,7 @@ from telegram import Update, InputFile
 from telegram.ext import Updater, CommandHandler, MessageHandler, Filters, CallbackContext
 
 # Set up your bot token here
-TELEGRAM_BOT_TOKEN = os.getenv("TELEGRAM_BOT_TOKEN")
+TELEGRAM_BOT_TOKEN = os.getenv("7065470365:AAH84EEwdlbq2PtGN3xazmFjtjG_KxyHlPY")
 
 # Enhance API endpoint
 ENHANCER_API_URL = "https://olivine-tricolor-samba.glitch.me/api/enhancer?url="
