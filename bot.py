@@ -8,12 +8,12 @@ from telegram.ext import (
 import aiohttp
 
 # Bot Token and API URLs
-TELEGRAM_BOT_TOKEN = os.getenv("TELEGRAM_BOT_TOKEN")
+TELEGRAM_BOT_TOKEN = os.getenv("TELEGRAM_BOT_TOKEN")  # Ensure this is set in your environment
 ENHANCER_API_URL = "https://olivine-tricolor-samba.glitch.me/api/enhancer?url="
-KOYEB_DATABASE_URL = ""
-REQUIRED_CHANNEL = "@yourchannel"
-LOG_CHANNEL = "@yourlogchannel"
-ADMINS = ["@youradminusername", "youradminid"]
+KOYEB_DATABASE_URL = "https://koyeb-adm:khFat50DlXGj@ep-purple-cloud-a28j7t3o.eu-central-1.pg.koyeb.app/koyebdb"  # Your Koyeb database URL
+REQUIRED_CHANNEL = "@yourchannel"  # Replace with your channel username
+LOG_CHANNEL = "@yourlogchannel"  # Replace with your log channel username
+ADMINS = ["@youradminusername", "youradminid"]  # Replace with your admin usernames and IDs
 
 # Helper function to check channel subscription
 async def is_user_subscribed(user_id):
@@ -114,7 +114,7 @@ async def main():
 
     await app.start()
     await app.updater.start_webhook(listen="0.0.0.0", port=int(os.environ.get("PORT", "8443")), url_path=TELEGRAM_BOT_TOKEN)
-    await app.bot.set_webhook(f"https://your-domain.com/{TELEGRAM_BOT_TOKEN}")
+    await app.bot.set_webhook(f"https://your-domain.com/{TELEGRAM_BOT_TOKEN}")  # Replace with your actual domain
 
 if __name__ == "__main__":
     import asyncio
