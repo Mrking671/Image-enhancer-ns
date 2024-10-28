@@ -10,7 +10,7 @@ import aiohttp
 # Bot Token and API URLs
 TELEGRAM_BOT_TOKEN = os.getenv("TELEGRAM_BOT_TOKEN")
 ENHANCER_API_URL = "https://olivine-tricolor-samba.glitch.me/api/enhancer?url="
-KOYEB_DATABASE_URL = "https://your-koyeb-database-endpoint"
+KOYEB_DATABASE_URL = ""
 REQUIRED_CHANNEL = "@yourchannel"
 LOG_CHANNEL = "@yourlogchannel"
 ADMINS = ["@youradminusername", "youradminid"]
