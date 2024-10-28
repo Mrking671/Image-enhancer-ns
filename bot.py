@@ -110,7 +110,7 @@ async def handle_photo(update: Update, context: CallbackContext) -> None:
 
 # Broadcast message to all users
 async def broadcast(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
-    if update.message.from_user.id != <ADMIN_ID>:  # Replace <ADMIN_ID> with your Telegram ID
+    if update.message.from_user.id != 6951715555:  # Replace <ADMIN_ID> with your Telegram ID
         await update.message.reply_text("You are not authorized to use this command.")
         return
 
