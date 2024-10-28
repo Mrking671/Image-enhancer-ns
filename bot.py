@@ -11,9 +11,9 @@ import aiohttp
 TELEGRAM_BOT_TOKEN = os.getenv("TELEGRAM_BOT_TOKEN")  # Ensure this is set in your environment
 ENHANCER_API_URL = "https://olivine-tricolor-samba.glitch.me/api/enhancer?url="
 KOYEB_DATABASE_URL = "https://koyeb-adm:khFat50DlXGj@ep-purple-cloud-a28j7t3o.eu-central-1.pg.koyeb.app/koyebdb"  # Your Koyeb database URL
-REQUIRED_CHANNEL = "@yourchannel"  # Replace with your channel username
-LOG_CHANNEL = "@yourlogchannel"  # Replace with your log channel username
-ADMINS = ["@youradminusername", "youradminid"]  # Replace with your admin usernames and IDs
+REQUIRED_CHANNEL = "@chatgpt4for_free"  # Replace with your channel username
+LOG_CHANNEL = "@chatgptlogs"  # Replace with your log channel username
+ADMINS = ["@Lordsakunaa", "6951715555"]  # Replace with your admin usernames and IDs
 
 # Helper function to check channel subscription
 async def is_user_subscribed(user_id):
