@@ -1,12 +1,12 @@
 import os
 import requests
 import psycopg2
-from datetime import datetime, timedelta
 from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup, InputFile
 from telegram.ext import (
     Application, CommandHandler, MessageHandler, filters, ContextTypes, CallbackContext
 )
 from telegram.error import TelegramError
+from telegram.constants import ParseMode
 
 # Set up your bot token and PostgreSQL database URL
 TELEGRAM_BOT_TOKEN = os.getenv("TELEGRAM_BOT_TOKEN")
@@ -23,8 +23,7 @@ cur.execute("""
     CREATE TABLE IF NOT EXISTS users (
         user_id BIGINT PRIMARY KEY,
         username TEXT,
-        verified BOOLEAN DEFAULT FALSE,
-        last_verified TIMESTAMP DEFAULT NULL
+        verified BOOLEAN DEFAULT FALSE
     )
 """)
 conn.commit()
@@ -32,6 +31,8 @@ conn.commit()
 # Verification message with buttons
 async def send_verification_message(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     bot_username = context.bot.username
+    verification_link = f"https://t.me/{bot_username}?start=verified"
+    
     keyboard = [
         [InlineKeyboardButton(
             "I'm not a robot👨‍💼",
@@ -48,23 +49,11 @@ async def send_verification_message(update: Update, context: ContextTypes.DEFAUL
         reply_markup=reply_markup
     )
 
-# Function to check if the user is verified and within the 12-hour period
-def is_user_verified(user_id: int) -> bool:
-    cur.execute("SELECT verified, last_verified FROM users WHERE user_id = %s", (user_id,))
-    user = cur.fetchone()
-    if user:
-        verified, last_verified = user
-        if verified and last_verified:
-            # Check if the last verification was within the last 12 hours
-            if datetime.now() - last_verified < timedelta(hours=12):
-                return True
-    return False
-
 # Start command with subscription and verification check
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     user_id = update.message.from_user.id
     username = update.message.from_user.username
-
+    
     # Check subscription
     try:
         member_status = await context.bot.get_chat_member(CHANNEL_USERNAME, user_id)
@@ -76,32 +65,31 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
         return
 
     # Check or add user in the database
-    cur.execute("SELECT verified, last_verified FROM users WHERE user_id = %s", (user_id,))
+    cur.execute("SELECT verified FROM users WHERE user_id = %s", (user_id,))
     user = cur.fetchone()
-
     if user is None:
-        # Add new user to the database
-        cur.execute("INSERT INTO users (user_id, username, verified, last_verified) VALUES (%s, %s, FALSE, NULL)", (user_id, username))
+        cur.execute("INSERT INTO users (user_id, username, verified) VALUES (%s, %s, FALSE)", (user_id, username))
         conn.commit()
-        await send_verification_message(update, context)
-        return
-    elif not is_user_verified(user_id):  # If user is not verified or needs re-verification
+    elif not user[0]:  # If user exists but not verified
         await send_verification_message(update, context)
         return
 
-    await update.message.reply_text("Hello! You are verified. Please send me a photo, and I will enhance it for you.")
+    await update.message.reply_text("Hello! Please send me a photo, and I will enhance it for you.")
 
-# Handle verification completion
+# Handle verification status
 async def verify_user(update: Update, context: CallbackContext) -> None:
     user_id = update.message.from_user.id
-    cur.execute("UPDATE users SET verified = TRUE, last_verified = %s WHERE user_id = %s", (datetime.now(), user_id))
+    cur.execute("UPDATE users SET verified = TRUE WHERE user_id = %s", (user_id,))
     conn.commit()
-    await update.message.reply_text("Verification successful! You can now use the bot for the next 12 hours.")
+    await update.message.reply_text("Verification successful! You can now use the bot.")
 
 # Handle photos
 async def handle_photo(update: Update, context: CallbackContext) -> None:
     user_id = update.message.from_user.id
-    if is_user_verified(user_id):  # Only proceed if user is verified within 12 hours
+    cur.execute("SELECT verified FROM users WHERE user_id = %s", (user_id,))
+    user = cur.fetchone()
+
+    if user and user[0]:  # Only proceed if user is verified
         photo_file = await update.message.photo[-1].get_file()
         file_url = photo_file.file_path
         api_url = f"{ENHANCER_API_URL}{file_url}"
@@ -120,6 +108,28 @@ async def handle_photo(update: Update, context: CallbackContext) -> None:
     else:
         await send_verification_message(update, context)
 
+# Broadcast message to all users
+async def broadcast(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+    if update.message.from_user.id != 6951715555:  # Replace <ADMIN_ID> with your Telegram ID
+        await update.message.reply_text("You are not authorized to use this command.")
+        return
+
+    message_text = " ".join(context.args)
+    cur.execute("SELECT user_id FROM users")
+    users = cur.fetchall()
+    for user in users:
+        try:
+            await context.bot.send_message(chat_id=user[0], text=message_text)
+        except TelegramError:
+            continue
+    await update.message.reply_text("Message broadcasted to all users.")
+
+# Command to show total users
+async def total_users(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+    cur.execute("SELECT COUNT(*) FROM users")
+    user_count = cur.fetchone()[0]
+    await update.message.reply_text(f"Total users: {user_count}")
+
 # Main function to start the bot with webhook
 def main() -> None:
     app = Application.builder().token(TELEGRAM_BOT_TOKEN).build()
@@ -127,6 +137,8 @@ def main() -> None:
     # Command handlers
     app.add_handler(CommandHandler("start", start))
     app.add_handler(CommandHandler("verify", verify_user))
+    app.add_handler(CommandHandler("broadcast", broadcast))
+    app.add_handler(CommandHandler("total_users", total_users))
     app.add_handler(MessageHandler(filters.PHOTO, handle_photo))
 
     # Set webhook (replace <YOUR_WEBHOOK_URL> with your actual webhook URL)
