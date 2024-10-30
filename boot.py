@@ -22,7 +22,7 @@ users_collection = db['users']
 ENHANCER_API_URL = "https://olivine-tricolor-samba.glitch.me/api/enhancer?url="
 
 # Verification Link (CAPTCHA) setup
-VERIFICATION_LINK = "https://t.me/your_bot_username?start=verified"
+VERIFICATION_LINK = "https://t.me/Image_enhancerremini_bot?start=verified"
 
 # Logger setup
 logging.basicConfig(
