@@ -21,9 +21,6 @@ users_collection = db['users']
 # Enhance API endpoint
 ENHANCER_API_URL = "https://olivine-tricolor-samba.glitch.me/api/enhancer?url="
 
-# Verification Link (CAPTCHA) setup
-VERIFICATION_LINK = "https://t.me/Image_enhancerremini_bot?start=verified"
-
 # Logger setup
 logging.basicConfig(
     format='%(asctime)s - %(name)s - %(levelname)s - %(message)s', level=logging.INFO
@@ -35,26 +32,11 @@ async def check_subscription(user_id: int, context: ContextTypes.DEFAULT_TYPE) -
     member = await context.bot.get_chat_member(CHANNEL_ID, user_id)
     return member.status in ["member", "administrator", "creator"]
 
-# Helper function to check and update verification status
-async def check_verification(user_id: int) -> bool:
-    user_data = users_collection.find_one({"user_id": user_id})
-    if user_data:
-        last_verified = user_data.get("last_verified")
-        if last_verified:
-            # Check if 12 hours have passed
-            if datetime.utcnow() - last_verified < timedelta(hours=12):
-                return True
-    # If no verification data or expired, prompt for verification
-    users_collection.update_one(
-        {"user_id": user_id},
-        {"$set": {"user_id": user_id, "verified": False, "last_verified": None}},
-        upsert=True
-    )
-    return False
-
-# Force Subscription and Verification Handler
+# Force Subscription Handler
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     user = update.effective_user
+    user_data = users_collection.find_one({"user_id": user.id})
+
     # Force Subscription Check
     if not await check_subscription(user.id, context):
         await update.message.reply_text(
@@ -65,8 +47,8 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
         )
         return
 
-    # Check if user needs to re-verify
-    if not await check_verification(user.id):
+    # Verify User
+    if not user_data or not user_data.get("verified"):
         await send_verification_message(update, context)
     else:
         await update.message.reply_text("Welcome back! You’re verified and can use the bot.")
@@ -74,7 +56,7 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
 # Verification message function
 async def send_verification_message(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     keyboard = [
-        [InlineKeyboardButton("I'm not a robot", url=VERIFICATION_LINK)],
+        [InlineKeyboardButton("I'm not a robot", url=f"https://t.me/Image_enhancerremini_bot?start=verified")],
         [InlineKeyboardButton("Help with CAPTCHA", url="https://t.me/disneysworl_d/5")]
     ]
     reply_markup = InlineKeyboardMarkup(keyboard)
@@ -83,14 +65,17 @@ async def send_verification_message(update: Update, context: ContextTypes.DEFAUL
         reply_markup=reply_markup
     )
 
-# Auto-verify users upon visiting the link
-async def auto_verify(user_id: int) -> None:
+# Auto verify users when they click the link
+async def auto_verify(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+    user = update.effective_user
     now = datetime.utcnow()
+
     users_collection.update_one(
-        {"user_id": user_id},
-        {"$set": {"verified": True, "last_verified": now}},
+        {"user_id": user.id},
+        {"$set": {"user_id": user.id, "verified": True, "last_verified": now}},
         upsert=True
     )
+    await update.message.reply_text("You are now verified! Feel free to use the bot.")
 
 # Broadcast command for admin
 async def broadcast(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
@@ -128,7 +113,8 @@ async def handle_photo(update: Update, context: ContextTypes.DEFAULT_TYPE) -> No
         await update.message.reply_text("Please subscribe to our channel to use this bot.")
         return
 
-    if not await check_verification(update.effective_user.id):
+    user_data = users_collection.find_one({"user_id": update.effective_user.id})
+    if not user_data or not user_data.get("verified"):
         await send_verification_message(update, context)
         return
 
@@ -149,7 +135,7 @@ async def handle_photo(update: Update, context: ContextTypes.DEFAULT_TYPE) -> No
                 with open("enhanced_image.png", "wb") as f:
                     f.write(enhanced_image_data.content)
                 with open("enhanced_image.png", "rb") as f:
-                    await update.message.reply_document(document=InputFile(f), caption="Here is your enhanced image!")
+                    await update.message.reply_photo(photo=InputFile(f), caption="Here is your enhanced image!")
             else:
                 await update.message.reply_text("Failed to download the enhanced image.")
         else:
@@ -163,6 +149,7 @@ def main() -> None:
 
     # Command Handlers
     application.add_handler(CommandHandler("start", start))
+    application.add_handler(MessageHandler(filters.COMMAND, auto_verify))  # This will auto-verify users
     application.add_handler(CommandHandler("broadcast", broadcast))
     application.add_handler(CommandHandler("total_users", total_users))
     application.add_handler(MessageHandler(filters.PHOTO, handle_photo))
