@@ -161,7 +161,7 @@ def main() -> None:
     application.add_handler(CommandHandler("broadcast", broadcast))
     application.add_handler(CommandHandler("total_users", total_users))
     application.add_handler(MessageHandler(filters.PHOTO, handle_photo))
-    application.add_handler(MessageHandler(filters.TEXT & filters.regex(r'verified'), handle_return))
+    application.add_handler(MessageHandler(filters.TEXT & filters.Regex(r'verified'), handle_return))
 
     # Webhook Setup
     PORT = int(os.environ.get("PORT", 8443))
