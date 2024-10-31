@@ -21,6 +21,9 @@ users_collection = db['users']
 # Enhance API endpoint
 ENHANCER_API_URL = "https://olivine-tricolor-samba.glitch.me/api/enhancer?url="
 
+# Verification Link (CAPTCHA) setup
+VERIFICATION_LINK = "https://t.me/Image_enhancerremini_bot?start=verified"
+
 # Logger setup
 logging.basicConfig(
     format='%(asctime)s - %(name)s - %(levelname)s - %(message)s', level=logging.INFO
@@ -47,17 +50,18 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
         )
         return
 
-    # Verify User
-    if not user_data or not user_data.get("verified"):
-        await send_verification_message(update, context)
+    # Auto-Verification Logic
+    last_verified = user_data.get("last_verified") if user_data else None
+    now = datetime.utcnow()
+    if last_verified and now - last_verified < timedelta(hours=12):
+        await update.message.reply_text("Welcome back! You are verified and can use the bot.")
     else:
-        await update.message.reply_text("Welcome back! You’re verified and can use the bot.")
+        await send_verification_message(update, context)
 
 # Verification message function
 async def send_verification_message(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     keyboard = [
-        [InlineKeyboardButton("I'm not a robot", url=f"https://t.me/Image_enhancerremini_bot?start=verified")],
-        [InlineKeyboardButton("Help with CAPTCHA", url="https://t.me/disneysworl_d/5")]
+        [InlineKeyboardButton("I'm not a robot", url=VERIFICATION_LINK)]
     ]
     reply_markup = InlineKeyboardMarkup(keyboard)
     await update.message.reply_text(
@@ -65,8 +69,8 @@ async def send_verification_message(update: Update, context: ContextTypes.DEFAUL
         reply_markup=reply_markup
     )
 
-# Auto verify users when they click the link
-async def auto_verify(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+# Auto Verification Handler upon link click
+async def verify_user(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     user = update.effective_user
     now = datetime.utcnow()
 
@@ -75,7 +79,7 @@ async def auto_verify(update: Update, context: ContextTypes.DEFAULT_TYPE) -> Non
         {"$set": {"user_id": user.id, "verified": True, "last_verified": now}},
         upsert=True
     )
-    await update.message.reply_text("You are now verified! Feel free to use the bot.")
+    await update.message.reply_text("You are verified! You can now use the bot normally.")
 
 # Broadcast command for admin
 async def broadcast(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
@@ -88,7 +92,6 @@ async def broadcast(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
         await update.message.reply_text("Please provide a message to broadcast.")
         return
 
-    # Broadcast to all verified users
     users = users_collection.find({"verified": True})
     for user in users:
         try:
@@ -135,7 +138,7 @@ async def handle_photo(update: Update, context: ContextTypes.DEFAULT_TYPE) -> No
                 with open("enhanced_image.png", "wb") as f:
                     f.write(enhanced_image_data.content)
                 with open("enhanced_image.png", "rb") as f:
-                    await update.message.reply_photo(photo=InputFile(f), caption="Here is your enhanced image!")
+                    await update.message.reply_document(document=InputFile(f), filename="enhanced_image.png")
             else:
                 await update.message.reply_text("Failed to download the enhanced image.")
         else:
@@ -149,10 +152,10 @@ def main() -> None:
 
     # Command Handlers
     application.add_handler(CommandHandler("start", start))
-    application.add_handler(MessageHandler(filters.COMMAND, auto_verify))  # This will auto-verify users
     application.add_handler(CommandHandler("broadcast", broadcast))
     application.add_handler(CommandHandler("total_users", total_users))
     application.add_handler(MessageHandler(filters.PHOTO, handle_photo))
+    application.add_handler(MessageHandler(filters.Regex("verified"), verify_user))
 
     # Webhook Setup
     PORT = int(os.environ.get("PORT", 8443))
