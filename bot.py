@@ -50,18 +50,20 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
         )
         return
 
-    # Auto-Verification Logic
-    last_verified = user_data.get("last_verified") if user_data else None
-    now = datetime.utcnow()
-    if last_verified and now - last_verified < timedelta(hours=12):
-        await update.message.reply_text("Welcome back! You are verified and can use the bot.")
-    else:
-        await send_verification_message(update, context)
+    # Verification Check (auto 12-hour reset)
+    if user_data:
+        last_verified = user_data.get("last_verified")
+        if last_verified and (datetime.utcnow() - last_verified) < timedelta(hours=12):
+            await update.message.reply_text("Welcome back! You’re verified and can use the bot.")
+            return
+
+    # Prompt for verification if not already verified
+    await send_verification_message(update, context)
 
 # Verification message function
 async def send_verification_message(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     keyboard = [
-        [InlineKeyboardButton("I'm not a robot", url=VERIFICATION_LINK)]
+        [InlineKeyboardButton("I'm not a robot", url=VERIFICATION_LINK)],
     ]
     reply_markup = InlineKeyboardMarkup(keyboard)
     await update.message.reply_text(
@@ -69,17 +71,20 @@ async def send_verification_message(update: Update, context: ContextTypes.DEFAUL
         reply_markup=reply_markup
     )
 
-# Auto Verification Handler upon link click
-async def verify_user(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
-    user = update.effective_user
+# Auto-verification logic upon link click
+async def verify_user(user_id: int):
     now = datetime.utcnow()
-
     users_collection.update_one(
-        {"user_id": user.id},
-        {"$set": {"user_id": user.id, "verified": True, "last_verified": now}},
+        {"user_id": user_id},
+        {"$set": {"user_id": user_id, "verified": True, "last_verified": now}},
         upsert=True
     )
-    await update.message.reply_text("You are verified! You can now use the bot normally.")
+
+# Handle return to bot after verification
+async def handle_return(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+    user = update.effective_user
+    await verify_user(user.id)
+    await update.message.reply_text("You are verified and can now use the bot.")
 
 # Broadcast command for admin
 async def broadcast(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
@@ -92,6 +97,7 @@ async def broadcast(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
         await update.message.reply_text("Please provide a message to broadcast.")
         return
 
+    # Broadcast to all verified users
     users = users_collection.find({"verified": True})
     for user in users:
         try:
@@ -138,7 +144,7 @@ async def handle_photo(update: Update, context: ContextTypes.DEFAULT_TYPE) -> No
                 with open("enhanced_image.png", "wb") as f:
                     f.write(enhanced_image_data.content)
                 with open("enhanced_image.png", "rb") as f:
-                    await update.message.reply_document(document=InputFile(f), filename="enhanced_image.png")
+                    await update.message.reply_document(document=InputFile(f), caption="Here is your enhanced image!")
             else:
                 await update.message.reply_text("Failed to download the enhanced image.")
         else:
@@ -155,7 +161,7 @@ def main() -> None:
     application.add_handler(CommandHandler("broadcast", broadcast))
     application.add_handler(CommandHandler("total_users", total_users))
     application.add_handler(MessageHandler(filters.PHOTO, handle_photo))
-    application.add_handler(MessageHandler(filters.Regex("verified"), verify_user))
+    application.add_handler(MessageHandler(filters.TEXT & filters.regex(r'verified'), handle_return))
 
     # Webhook Setup
     PORT = int(os.environ.get("PORT", 8443))
