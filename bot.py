@@ -35,12 +35,12 @@ async def check_subscription(user_id: int, context: ContextTypes.DEFAULT_TYPE) -
     member = await context.bot.get_chat_member(CHANNEL_ID, user_id)
     return member.status in ["member", "administrator", "creator"]
 
-# Force Subscription Handler
+# Force Subscription and Verification Check
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     user = update.effective_user
     user_data = users_collection.find_one({"user_id": user.id})
-
-    # Force Subscription Check
+    
+    # Check subscription status
     if not await check_subscription(user.id, context):
         await update.message.reply_text(
             "Please subscribe to our channel to use this bot.",
@@ -50,41 +50,36 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
         )
         return
 
-    # Verification Check (auto 12-hour reset)
-    if user_data:
-        last_verified = user_data.get("last_verified")
-        if last_verified and (datetime.utcnow() - last_verified) < timedelta(hours=12):
-            await update.message.reply_text("Welcome back! You’re verified and can use the bot.")
-            return
+    # Auto-verify or prompt verification if not recently verified
+    if not user_data or user_data.get("verified_until", datetime.utcnow()) < datetime.utcnow():
+        await prompt_verification(update)
+    else:
+        await update.message.reply_text("Welcome back! You’re verified and can use the bot.")
 
-    # Prompt for verification if not already verified
-    await send_verification_message(update, context)
-
-# Verification message function
-async def send_verification_message(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
-    keyboard = [
-        [InlineKeyboardButton("I'm not a robot", url=VERIFICATION_LINK)],
-    ]
+# Send verification prompt
+async def prompt_verification(update: Update) -> None:
+    keyboard = [[InlineKeyboardButton("I'm not a robot", url=VERIFICATION_LINK)]]
     reply_markup = InlineKeyboardMarkup(keyboard)
     await update.message.reply_text(
         'Please verify that you are human by clicking the button below.',
         reply_markup=reply_markup
     )
 
-# Auto-verification logic upon link click
-async def verify_user(user_id: int):
+# Auto verification handling
+async def handle_return(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+    user = update.effective_user
     now = datetime.utcnow()
+    verified_until = now + timedelta(hours=12)
+
+    # Update verification status in MongoDB
     users_collection.update_one(
-        {"user_id": user_id},
-        {"$set": {"user_id": user_id, "verified": True, "last_verified": now}},
+        {"user_id": user.id},
+        {"$set": {"user_id": user.id, "verified": True, "verified_until": verified_until}},
         upsert=True
     )
 
-# Handle return to bot after verification
-async def handle_return(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
-    user = update.effective_user
-    await verify_user(user.id)
-    await update.message.reply_text("You are verified and can now use the bot.")
+    # Inform the user
+    await update.message.reply_text("You are verified and can now use the bot for 12 hours.")
 
 # Broadcast command for admin
 async def broadcast(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
@@ -97,7 +92,6 @@ async def broadcast(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
         await update.message.reply_text("Please provide a message to broadcast.")
         return
 
-    # Broadcast to all verified users
     users = users_collection.find({"verified": True})
     for user in users:
         try:
@@ -123,8 +117,8 @@ async def handle_photo(update: Update, context: ContextTypes.DEFAULT_TYPE) -> No
         return
 
     user_data = users_collection.find_one({"user_id": update.effective_user.id})
-    if not user_data or not user_data.get("verified"):
-        await send_verification_message(update, context)
+    if not user_data or user_data.get("verified_until", datetime.utcnow()) < datetime.utcnow():
+        await prompt_verification(update)
         return
 
     photo_file = await update.message.photo[-1].get_file()
