@@ -51,7 +51,7 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
         await update.message.reply_text(
             "Please subscribe to our channel to use this bot.",
             reply_markup=InlineKeyboardMarkup(
-                [[InlineKeyboardButton("Subscribe", url=f"https://t.me/{CHANNEL_ID}")]]
+                [[InlineKeyboardButton("Subscribe", url=f"https://t.me/chatgpt4for_free")]]
             )
         )
         return
@@ -79,14 +79,19 @@ async def auto_verify(update: Update, context: ContextTypes.DEFAULT_TYPE) -> Non
         upsert=True
     )
 
-    await update.message.reply_text("You are now verified and can use the bot!")
+    await update.message.reply_text("You are now verified and can use the bot for 12 hours!")
 
 # Handle Photos for Enhancement
 async def handle_photo(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     user_id = update.effective_user.id
 
-    if not await check_subscription(user_id, context):
-        await update.message.reply_text("Please subscribe to our channel to use this bot.")
+    if not await check_subscription(user.id, context):
+        await update.message.reply_text(
+            "Please subscribe to our channel to use this bot.",
+            reply_markup=InlineKeyboardMarkup(
+                [[InlineKeyboardButton("Subscribe", url=f"https://t.me/chatgpt4for_free")]]
+            )
+        )
         return
 
     if not is_verified_recently(user_id):
