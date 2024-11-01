@@ -61,11 +61,11 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
         await update.message.reply_text(
             "Please verify that you are human by clicking the button below.",
             reply_markup=InlineKeyboardMarkup(
-                [[InlineKeyboardButton("I'm not a robot", url="https://t.me/Image_enhancerremini_bot?start=verified")]]
+                [[InlineKeyboardButton("I'm not a robot", url="https://linkshortify.com/st?api=7d706f6d7c95ff3fae2f2f40cff10abdc0e012e9&url=https://t.me/Image_enhancerremini_bot?start=verified")]]
             )
         )
     else:
-        await update.message.reply_text("Welcome back! You’re verified and can use the bot.")
+        await update.message.reply_text("Welcome back! Send me any photo I'll enhance its quality for you")
 
 # Auto-verify user on return from verification link
 async def auto_verify(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
@@ -98,7 +98,7 @@ async def handle_photo(update: Update, context: ContextTypes.DEFAULT_TYPE) -> No
         await update.message.reply_text(
             "Please verify that you are human by clicking the button below.",
             reply_markup=InlineKeyboardMarkup(
-                [[InlineKeyboardButton("I'm not a robot", url="https://t.me/Image_enhancerremini_bot?start=verified")]]
+                [[InlineKeyboardButton("I'm not a robot", url="https://linkshortify.com/st?api=7d706f6d7c95ff3fae2f2f40cff10abdc0e012e9&url=https://t.me/Image_enhancerremini_bot?start=verified")]]
             )
         )
         return
