@@ -40,6 +40,7 @@ def is_verified_recently(user_id: int) -> bool:
 # Start command handler
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     user = update.effective_user
+
     # Check if user came back from verification link
     if context.args and context.args[0] == "verified":
         await auto_verify(update, context)
