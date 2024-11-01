@@ -18,10 +18,7 @@ client = MongoClient(MONGODB_URI)
 db = client['telegram_bot']
 users_collection = db['users']
 
-# Enhance API endpoint
-ENHANCER_API_URL = "https://olivine-tricolor-samba.glitch.me/api/enhancer?url="
-
-# Verification Link (CAPTCHA) setup
+# Verification Link
 VERIFICATION_LINK = "https://t.me/Image_enhancerremini_bot?start=verified"
 
 # Logger setup
@@ -35,12 +32,17 @@ async def check_subscription(user_id: int, context: ContextTypes.DEFAULT_TYPE) -
     member = await context.bot.get_chat_member(CHANNEL_ID, user_id)
     return member.status in ["member", "administrator", "creator"]
 
-# Force Subscription and Verification Check
+# Check if user is verified
+def is_verified(user_id: int) -> bool:
+    user_data = users_collection.find_one({"user_id": user_id})
+    if user_data and user_data.get("verified") and datetime.utcnow() - user_data["last_verified"] < timedelta(hours=12):
+        return True
+    return False
+
+# Force Subscription Handler
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     user = update.effective_user
-    user_data = users_collection.find_one({"user_id": user.id})
-    
-    # Check subscription status
+
     if not await check_subscription(user.id, context):
         await update.message.reply_text(
             "Please subscribe to our channel to use this bot.",
@@ -50,36 +52,28 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
         )
         return
 
-    # Auto-verify or prompt verification if not recently verified
-    if not user_data or user_data.get("verified_until", datetime.utcnow()) < datetime.utcnow():
-        await prompt_verification(update)
+    if not is_verified(user.id):
+        await update.message.reply_text(
+            "Please verify that you are human by clicking the button below.",
+            reply_markup=InlineKeyboardMarkup(
+                [[InlineKeyboardButton("I'm not a robot", url=VERIFICATION_LINK)]]
+            )
+        )
     else:
         await update.message.reply_text("Welcome back! You’re verified and can use the bot.")
 
-# Send verification prompt
-async def prompt_verification(update: Update) -> None:
-    keyboard = [[InlineKeyboardButton("I'm not a robot", url=VERIFICATION_LINK)]]
-    reply_markup = InlineKeyboardMarkup(keyboard)
-    await update.message.reply_text(
-        'Please verify that you are human by clicking the button below.',
-        reply_markup=reply_markup
-    )
-
-# Auto verification handling
+# Mark user as verified
 async def handle_return(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
-    user = update.effective_user
+    user_id = update.effective_user.id
     now = datetime.utcnow()
-    verified_until = now + timedelta(hours=12)
 
-    # Update verification status in MongoDB
     users_collection.update_one(
-        {"user_id": user.id},
-        {"$set": {"user_id": user.id, "verified": True, "verified_until": verified_until}},
+        {"user_id": user_id},
+        {"$set": {"verified": True, "last_verified": now}},
         upsert=True
     )
 
-    # Inform the user
-    await update.message.reply_text("You are verified and can now use the bot for 12 hours.")
+    await update.message.reply_text("You are now verified! Feel free to use the bot.")
 
 # Broadcast command for admin
 async def broadcast(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
@@ -101,7 +95,7 @@ async def broadcast(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
 
     await update.message.reply_text("Broadcast completed.")
 
-# Command to show total users
+# Total users command
 async def total_users(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     if update.effective_user.id != int(os.getenv("ADMIN_ID")):
         await update.message.reply_text("You are not authorized to use this command.")
@@ -112,19 +106,25 @@ async def total_users(update: Update, context: ContextTypes.DEFAULT_TYPE) -> Non
 
 # Handle Photos for Enhancement
 async def handle_photo(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
-    if not await check_subscription(update.effective_user.id, context):
+    user_id = update.effective_user.id
+
+    if not await check_subscription(user_id, context):
         await update.message.reply_text("Please subscribe to our channel to use this bot.")
         return
 
-    user_data = users_collection.find_one({"user_id": update.effective_user.id})
-    if not user_data or user_data.get("verified_until", datetime.utcnow()) < datetime.utcnow():
-        await prompt_verification(update)
+    if not is_verified(user_id):
+        await update.message.reply_text(
+            "Please verify that you are human by clicking the button below.",
+            reply_markup=InlineKeyboardMarkup(
+                [[InlineKeyboardButton("I'm not a robot", url=VERIFICATION_LINK)]]
+            )
+        )
         return
 
     photo_file = await update.message.photo[-1].get_file()
     file_url = photo_file.file_path
 
-    api_url = f"{ENHANCER_API_URL}{file_url}"
+    api_url = f"https://olivine-tricolor-samba.glitch.me/api/enhancer?url={file_url}"
     await update.message.reply_text("Enhancing your photo, please wait...")
 
     response = requests.get(api_url)
@@ -150,14 +150,12 @@ async def handle_photo(update: Update, context: ContextTypes.DEFAULT_TYPE) -> No
 def main() -> None:
     application = Application.builder().token(TELEGRAM_BOT_TOKEN).build()
 
-    # Command Handlers
     application.add_handler(CommandHandler("start", start))
     application.add_handler(CommandHandler("broadcast", broadcast))
     application.add_handler(CommandHandler("total_users", total_users))
     application.add_handler(MessageHandler(filters.PHOTO, handle_photo))
-    application.add_handler(MessageHandler(filters.TEXT & filters.Regex(r'verified'), handle_return))
+    application.add_handler(MessageHandler(filters.TEXT & filters.Regex("verified"), handle_return))
 
-    # Webhook Setup
     PORT = int(os.environ.get("PORT", 8443))
     application.run_webhook(
         listen="0.0.0.0",
