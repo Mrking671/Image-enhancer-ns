@@ -47,7 +47,7 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
         await update.message.reply_text(
             "Please subscribe to our channel to use this bot.",
             reply_markup=InlineKeyboardMarkup(
-                [[InlineKeyboardButton("Subscribe", url=f"https://t.me/{CHANNEL_ID}")]]
+                [[InlineKeyboardButton("Subscribe", url=f"https://t.me/chatgpt4for_free")]]
             )
         )
         return
@@ -59,16 +59,16 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
             {"$set": {"user_id": user.id, "verified": True, "last_verified": datetime.utcnow()}},
             upsert=True
         )
-        await update.message.reply_text("You are verified! You can now use the bot.")
+        await update.message.reply_text("You are verified!✅ You can now use the bot.")
     elif not is_verified_recently(user.id):
         await send_verification_message(update)
     else:
-        await update.message.reply_text("Welcome back! You’re verified and can use the bot.")
+        await update.message.reply_text("Welcome back! Send me any image I'll enhance it for you ❤")
 
 # Send verification message if needed
 async def send_verification_message(update: Update) -> None:
     keyboard = [
-        [InlineKeyboardButton("I'm not a robot", url="https://t.me/Image_enhancerremini_bot?start=verified")]
+        [InlineKeyboardButton("I'm not a robot", url="https://linkshortify.com/st?api=7d706f6d7c95ff3fae2f2f40cff10abdc0e012e9&url=https://t.me/Image_enhancerremini_bot?start=verified")]
     ]
     reply_markup = InlineKeyboardMarkup(keyboard)
     await update.message.reply_text(
