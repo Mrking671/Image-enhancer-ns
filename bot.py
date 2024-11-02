@@ -72,7 +72,7 @@ async def send_verification_message(update: Update) -> None:
     ]
     reply_markup = InlineKeyboardMarkup(keyboard)
     await update.message.reply_text(
-        "Please verify that you are human by clicking the button below.",
+        "Please verify that you are human by clicking the button below.\n\n𝗧𝗨𝗧𝗢𝗥𝗜𝗔𝗟- https://t.me/disneysworl_d/5",
         reply_markup=reply_markup
     )
 
@@ -110,7 +110,7 @@ async def handle_photo(update: Update, context: ContextTypes.DEFAULT_TYPE) -> No
     user_id = update.effective_user.id
 
     if not await check_subscription(user_id, context):
-        await update.message.reply_text("Please subscribe to our channel to use this bot.")
+        await update.message.reply_text("Please subscribe to our channel to use this bot.\n\n𝗖𝗛𝗔𝗡𝗡𝗘𝗟 - @chatgpt4for_free")
         return
 
     if not is_verified_recently(user_id):
@@ -141,11 +141,11 @@ async def handle_photo(update: Update, context: ContextTypes.DEFAULT_TYPE) -> No
             else:
                 await update.message.reply_text("Error: Enhancement failed to return an image URL.")
         else:
-            await update.message.reply_text("Enhancement failed. Please try again later.")
+            await update.message.reply_text("Enhancement failed. Please try again later or contact admin @Lordsakunaa")
 
     except requests.RequestException as e:
         logger.error(f"API request error: {e}")
-        await update.message.reply_text("Failed to connect to the enhancement service. Please try again later.")
+        await update.message.reply_text("Failed to connect to the enhancement service. Please try again later or contact admin @Lordsakunaa")
 
 # Webhook Configuration
 def main() -> None:
