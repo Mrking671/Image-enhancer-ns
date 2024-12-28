@@ -47,7 +47,7 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
         await update.message.reply_text(
             "Please subscribe to our channel to use this bot.",
             reply_markup=InlineKeyboardMarkup(
-                [[InlineKeyboardButton("Subscribe", url=f"https://t.me/chatgpt4for_free")]]
+                [[InlineKeyboardButton("Subscribe", url=f"https://t.me/public_botz")]]
             )
         )
         return
