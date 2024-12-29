@@ -163,7 +163,7 @@ def main() -> None:
         listen="0.0.0.0",
         port=PORT,
         url_path=TELEGRAM_BOT_TOKEN,
-        webhook_url=f"https://image-enhancer-ns.onrender.com/{TELEGRAM_BOT_TOKEN}"
+        webhook_url=f"https://image-enhancer-ns-sw3r.onrender.com/{TELEGRAM_BOT_TOKEN}"
     )
 
 if __name__ == "__main__":
