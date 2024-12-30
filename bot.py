@@ -20,7 +20,7 @@ db = client['telegram_bot']
 users_collection = db['users']
 
 # Enhance API endpoint
-ENHANCER_API_URL = "https://olivine-tricolor-samba.glitch.me/api/enhancer?url="
+ENHANCER_API_URL = "https://bj-devs.serv00.net/ImagesEnhance.php?imageurl="
 
 # Logger setup
 logging.basicConfig(
@@ -68,11 +68,11 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
 # Send verification message if needed
 async def send_verification_message(update: Update) -> None:
     keyboard = [
-        [InlineKeyboardButton("I'm not a robot", url="https://linkshortify.com/st?api=7d706f6d7c95ff3fae2f2f40cff10abdc0e012e9&url=https://t.me/Image_enhancerremini_bot?start=verified")]
+        [InlineKeyboardButton("✅I'm not a robot🤖", url="https://linkshortify.com/st?api=7d706f6d7c95ff3fae2f2f40cff10abdc0e012e9&url=https://t.me/Image_enhancerremini_bot?start=verified")]
     ]
     reply_markup = InlineKeyboardMarkup(keyboard)
     await update.message.reply_text(
-        "Please verify that you are human by clicking the button below.\n\n𝗧𝗨𝗧𝗢𝗥𝗜𝗔𝗟- https://t.me/disneysworl_d/5",
+        "𝐏𝐋𝐄𝐀𝐒𝐄 𝐕𝐄𝐑𝐈𝐅𝐘 𝐓𝐇𝐀𝐓 𝐘𝐎𝐔 𝐀𝐑𝐄 𝐇𝐔𝐌𝐀𝐍 𝐁𝐘 𝐂𝐋𝐈𝐂𝐊𝐈𝐍𝐆 𝐓𝐇𝐄 𝐁𝐔𝐓𝐓𝐎𝐍 𝐁𝐄𝐋𝐎𝐖👇.\n\n𝗧𝗨𝗧𝗢𝗥𝗜𝗔𝗟- https://t.me/disneysworl_d/5",
         reply_markup=reply_markup
     )
 
@@ -129,7 +129,7 @@ async def handle_photo(update: Update, context: ContextTypes.DEFAULT_TYPE) -> No
 
         data = response.json()
         if data.get("status") == "success":
-            enhanced_image_url = data.get("image")
+            enhanced_image_url = data.get("download_url")
             if enhanced_image_url:
                 enhanced_image_data = requests.get(enhanced_image_url)
                 enhanced_image_data.raise_for_status()
@@ -137,7 +137,7 @@ async def handle_photo(update: Update, context: ContextTypes.DEFAULT_TYPE) -> No
                 with open("enhanced_image.png", "wb") as f:
                     f.write(enhanced_image_data.content)
                 with open("enhanced_image.png", "rb") as f:
-                    await update.message.reply_document(document=InputFile(f), caption="Here is your enhanced image!")
+                    await update.message.reply_document(document=InputFile(f), caption="Here is your enhanced image!💯\n𝐃𝐎𝐍𝐀𝐓𝐄 𝐔𝐒❤ - @Lordsakunaa")
             else:
                 await update.message.reply_text("Error: Enhancement failed to return an image URL.")
         else:
