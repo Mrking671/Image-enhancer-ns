@@ -68,11 +68,18 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
 # Send verification message if needed
 async def send_verification_message(update: Update) -> None:
     keyboard = [
-        [InlineKeyboardButton("✅I'm not a robot🤖", url="https://linkshortify.com/st?api=7d706f6d7c95ff3fae2f2f40cff10abdc0e012e9&url=https://t.me/Image_enhancerremini_bot?start=verified")]
-    ]
+        [InlineKeyboardButton(
+            "I'm not a robot🤖",  # New button (not a web app)
+            url=f"https://linkshortify.com/st?api=7d706f6d7c95ff3fae2f2f40cff10abdc0e012e9&url=https://t.me/{context.bot.username}?start=verified"
+        )],
+        [InlineKeyboardButton(
+            "How to open captcha",  # New button (not a web app)
+            url="https://t.me/disneysworl_d/5"
+        )]
+    ]   
     reply_markup = InlineKeyboardMarkup(keyboard)
     await update.message.reply_text(
-        "𝐏𝐋𝐄𝐀𝐒𝐄 𝐕𝐄𝐑𝐈𝐅𝐘 𝐓𝐇𝐀𝐓 𝐘𝐎𝐔 𝐀𝐑𝐄 𝐇𝐔𝐌𝐀𝐍 𝐁𝐘 𝐂𝐋𝐈𝐂𝐊𝐈𝐍𝐆 𝐓𝐇𝐄 𝐁𝐔𝐓𝐓𝐎𝐍 𝐁𝐄𝐋𝐎𝐖👇.\n\n𝗧𝗨𝗧𝗢𝗥𝗜𝗔𝗟- https://t.me/disneysworl_d/5",
+        "𝐏𝐋𝐄𝐀𝐒𝐄 𝐕𝐄𝐑𝐈𝐅𝐘 𝐓𝐇𝐀𝐓 𝐘𝐎𝐔 𝐀𝐑𝐄 𝐇𝐔𝐌𝐀𝐍 𝐁𝐘 𝐂𝐋𝐈𝐂𝐊𝐈𝐍𝐆 𝐓𝐇𝐄 𝐁𝐔𝐓𝐓𝐎𝐍 𝐁𝐄𝐋𝐎𝐖👇.\n\nAFTER VERIFY YOU ARE ABLE TO USE THIS BOT TO ENHANCE YOUR PHOTOS. ",
         reply_markup=reply_markup
     )
 
